@@ -70,10 +70,20 @@ certificates
 
 echo
 read -p "Enter a username: " username
-
 ocpasswd -c /etc/ocserv/ocpasswd $username
-iptables -t nat -A POSTROUTING -j MASQUERADE
+
 sed -i -e 's@#net.ipv4.ip_forward=@net.ipv4.ip_forward=1@g' /etc/sysctl.conf
+
+iptables -t nat -A POSTROUTING -j MASQUERADE
+iptables-save > /etc/iptables.rules
+
+cat << EOF > /etc/network/if-pre-up.d/iptables
+#!/bin/sh
+iptables-restore < /etc/iptables.rules
+exit 0
+EOF
+
+chmod +x /etc/network/if-pre-up.d/iptables
 
 sysctl -p /etc/sysctl.conf
 echo -e "\e[32mStopping ocserv service\e[39m"
